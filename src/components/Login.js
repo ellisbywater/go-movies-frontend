@@ -5,22 +5,43 @@ import { useNavigate, useOutletContext } from "react-router-dom";
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const { setJwtToken, setAlertClassName, setAlertMessage } = useOutletContext();
+    const { setJwtToken, setAlertClassName, setAlertMessage, toggleRefresh } = useOutletContext();
 
     const navigate = useNavigate();
 
     const handleSubmit = event => {
         event.preventDefault();
-        console.log("email/pass", email, password);
-        if (email === "admin@example.com") {
-            setJwtToken("abc");
-            setAlertClassName("d-none");
-            setAlertMessage("");
-            navigate("/");
-        } else {
-            setAlertClassName("alert-danger");
-            setAlertMessage("invalid credentials");
+        // build request payload
+        let payload = {
+            email: email,
+            password: password
         }
+        const requestOptions = {
+            method: "POST",
+            header: {
+                'Content-Type':'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(payload)
+        }
+        fetch(`/authenticate`, requestOptions)
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                setAlertClassName("alert-danger")
+                setAlertMessage(data.message)
+            } else {
+                setJwtToken(data.access_token)
+                setAlertClassName("d-none")
+                setAlertMessage("")
+                toggleRefresh(true)
+                navigate("/")
+            }
+        })
+        .catch(error => {
+            setAlertClassName("alert-danger")
+            setAlertMessage(error)
+        })
     }
     return (
         <div className="col-md-6 offset-md-3">
